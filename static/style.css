@@ -1,0 +1,58 @@
+body {
+  background-color: #0f0f0f;
+  color: #fff;
+  font-size: x-large;
+}
+
+
+.center {
+  margin: auto;
+  width: 50%;
+  background-color: #141a1a;
+  border: 3px solid rgb(95, 95, 77);
+  padding: 10px;
+}
+
+.title {
+  text-align: center;
+  border: 3px solid transparent;
+  font-size: xx-large;
+  color: aliceblue;
+}
+
+a {
+  background-color: transparent;
+}
+
+a:hover {
+  background-color: brown;
+}
+
+a:link,
+a:hover,
+a:active,
+a:visited {
+  color: lightblue;
+}
+
+.canvas>div>*:hover {
+  position: relative;
+  top: -1px;
+  left: -1px;
+  border: 1px;
+  box-shadow: 2px 2px blue
+}
+
+.canvas>div>*>a {
+  display: block;
+  height: 100%;
+}
+
+.canvas>div>*>a:hover {
+  background-color: transparent;
+}
+
+input[type=color]{
+  width: 50%;
+  height: 50px;
+}

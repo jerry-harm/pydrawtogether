@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %} {{canvas.name}} {% endblock %}
+
+{% block body %}
+<p class="title">help me fight bot</p>
+<p class="title">帮助我打败机器人</p>
+<div class="center">
+    <form action="" method="post">
+        <p>
+            <label for="color">input color</label>
+            <input id="color" type="color" name="color" autocomplete="on" required>
+        </p>
+        {{ captcha_html(captcha)|safe }}
+        <input type="submit" value="Submit" />
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "pydrawtogether"
+version = "0.1.0"
+description = ""
+authors = ["jerry <jestar@no.reply>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Flask = "^3.0.3"
+flask-simple-captcha = "^5.5.5"
+flask-sqlalchemy = "^3.1.1"
+pillow = "^10.4.0"
+flask-compress = "^1.15"
+
+[tool.poetry.group.dev.dependencies]
+watchdog = "^4.0.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

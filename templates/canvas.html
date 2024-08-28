@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}{{canvas.name}}{% endblock %}
+
+{% block header %}
+<link href="{{ url_for('output_css',id=canvas.id) }}" rel="stylesheet" />
+<style>
+  .canvas {
+    width: {{canvas.width * 5}}px;
+    height: {{canvas.height * 5}}px;
+    border: 3px solid green;
+    margin: auto;
+  }
+
+  .canvas>div>* {
+    width: 5px;
+    height: 5px;
+    float: left;
+  }
+
+</style>
+<script src="{{url_for('static',filename='script.js')}}"></script>
+{% endblock %}
+
+{% block body %}
+
+<hr />
+<div class="canvas">
+  {% for i in range(canvas.height) %}
+  <div>
+    {% for j in range(canvas.width) %}
+    
+    <div id="p{{ i*canvas.height + j }}" title="{{ i*canvas.height + j }}"><a href="{{ i*canvas.height + j }}"></a></div>
+    
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+
+{% endblock %}

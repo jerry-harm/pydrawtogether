@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title%}drawtogether{% endblock %}
+
+{% block body %}
+<p class="title">DrawTogether</p>
+<div class="center">
+
+{% for canvas in canvases %}
+<a href="{{ url_for( 'output_html', id=canvas.id ) }}">
+<img src="{{ url_for( 'get_img', id=canvas.id ) }}" width="40%" title="{{canvas.name}}"/>
+</a>
+{% endfor %}
+
+<h1>How to play</h1>
+<p>
+    click picture above to start draw
+</p>
+
+<p>there is canvas for you to draw anything you want,click on the place you want to draw then choose color</p>
+
+<h1>history</h1>
+{% for canvas in canvases %}
+{% if canvas.history %}
+<p>
+    <a href=" {{ url_for( 'get_history' , id=canvas.id ) }} "> {{canvas.name}} </a>
+</p>
+{% endif %}
+{% endfor %}
+
+</div>
+
+{% endblock %}
