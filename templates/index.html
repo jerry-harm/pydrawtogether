@@ -13,6 +13,8 @@
 {{canvas.width}}x{{canvas.height}}
 {% if canvas.history %}
 history:<a href=" {{ url_for( 'get_history' , id=canvas.id ) }} "> {{canvas.name}} </a>
+{% else %}
+ {{canvas.name}}
 {% endif %}
 </p>
 {% endfor %}
