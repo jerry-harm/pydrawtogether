@@ -72,7 +72,7 @@ class Canvas(db.Model):
             new = Draw(x=x,y=y,color=self.data[y][x],canvas_id=self.id)
             db.session.add(new)
         self.data[y][x]=color
-        db.session.execute(update(Canvas).values(data=self.data))
+        db.session.execute(update(Canvas).where(Canvas.id==self.id).values(data=self.data))
         db.session.commit()
     
     def get_css(self):
