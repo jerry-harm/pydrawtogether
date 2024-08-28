@@ -207,3 +207,24 @@ def add(name,width,height,history,fill):
         db.session.add(canvas)
         db.session.commit()
         click.echo('added')
+
+@app.cli.command("list")
+def list():
+    with app.app_context():
+        canvases =  db.session.execute(db.select(Canvas)).scalars()
+        for canvas in canvases:
+            click.echo(canvas.id)
+            click.echo(canvas.name)
+            click.echo(canvas.width)
+            click.echo(canvas.height)
+            click.echo(canvas.history)
+            click.echo('')
+        
+
+@app.cli.command("del")
+@click.argument("id")
+def delete(id):
+    with app.app_context():
+        canvas = db.get_or_404(Canvas,id)
+        db.session.delete(canvas)
+        db.session.commit()
