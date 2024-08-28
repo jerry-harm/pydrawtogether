@@ -98,6 +98,13 @@ class Canvas(db.Model):
         gif = []
         data = self.data
         pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc())).scalars()
+
+        frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
+        for i in range(self.width):
+            for j in range(self.height):
+                frame.putpixel((i,j),(hex_to_rgb(data[j][i])))
+        gif.append(frame)
+
         for pixel in pixels:
             frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
             data[pixel.y][pixel.x]=pixel.color
