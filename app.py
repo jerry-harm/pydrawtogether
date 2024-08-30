@@ -164,7 +164,11 @@ def output_css(id):
 @app.get("/draw/<int:id>/")
 def output_html(id):
     canvas = db.get_or_404(Canvas,id)
-    return render_template('canvas.html',canvas=canvas)
+    res = make_response(render_template('canvas.html',canvas=canvas))
+    res.cache_control.max_age = '3600'
+    res.content_type = 'text/html'
+    res.cache_control.public = True
+    return res
  
 @app.get('/img/<int:id>')
 def get_img(id):
