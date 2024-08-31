@@ -12,7 +12,7 @@
 </a>
 {{canvas.width}}x{{canvas.height}}
 {% if canvas.history %}
-history:<a href=" {{ url_for( 'get_history' , id=canvas.id ) }} "> {{canvas.name}} </a>
+{{canvas.name}}<a href=" {{ url_for( 'get_history' , id=canvas.id ) }} ">history</a>
 {% else %}
  {{canvas.name}}
 {% endif %}
@@ -24,9 +24,11 @@ history:<a href=" {{ url_for( 'get_history' , id=canvas.id ) }} "> {{canvas.name
     click picture above to start draw
 </p>
 
-<p>there is canvas for you to draw anything you want,click on the place you want to draw then choose color<br>
+<p>There are canvas for you to draw anything, and everyone can draw. Click on the place you want to draw then choose color.<br>
     you can check the history if it exist
 </p>
+
+<iframe width="100%" height="400" style="border-width: 0; border-radius: 10px; " src="http://iwcvsbd7cylwvjh4dkdrczg24jy6y6hsuogptv6ebncespsyulua.b32.i2p/post/drawtogether/comment_here"></iframe>
 
 </div>
 
