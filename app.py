@@ -119,8 +119,8 @@ class Draw(db.Model):
     x = mapped_column(Integer)
     y = mapped_column(Integer)
     color = mapped_column(String(6),nullable=False)
-    date = mapped_column(DateTime,default=datetime.datetime.now(datetime.UTC))
-    canvas_id = mapped_column(ForeignKey('canvas.id'),nullable=False)
+    date = mapped_column(DateTime,default=datetime.datetime.now)
+    canvas_id = mapped_column(ForeignKey('canvas.id',ondelete='CASCADE'),nullable=False)
 
 @app.route("/")
 def index():
@@ -237,5 +237,8 @@ def list():
 def delete(id):
     with app.app_context():
         canvas = db.get_or_404(Canvas,id)
+        draws =  db.session.execute(db.select(Draw).filter_by().filter_by(canvas_id=canvas.id)).scalars()
         db.session.delete(canvas)
+        for draw in draws:
+            db.session.delete(draw)
         db.session.commit()
