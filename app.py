@@ -165,9 +165,9 @@ def output_css(id):
 def output_html(id):
     canvas = db.get_or_404(Canvas,id)
     res = make_response(render_template('canvas.html',canvas=canvas))
-    res.cache_control.max_age = '3600'
-    res.content_type = 'text/html'
     res.cache_control.public = True
+    res.cache_control.max_age = '31536000'
+    res.content_type = 'text/html'
     return res
  
 @app.get('/img/<int:id>')
