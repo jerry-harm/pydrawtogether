@@ -1,4 +1,5 @@
 import os
+import random
 import click
 import datetime
 from flask import Flask, abort, redirect, send_file, url_for, make_response, request,render_template
@@ -134,13 +135,27 @@ def draw(id,pos):
     canvas = db.get_or_404(Canvas,id)
     if pos > (canvas.width)*(canvas.height):
         abort(400)
-    if request.method == 'GET':
-        new_captcha_dict = SIMPLE_CAPTCHA.create()
-        return render_template('draw.html', captcha=new_captcha_dict,canvas=canvas)
-    if request.method == 'POST':
-        c_hash = request.form.get('captcha-hash')
-        c_text = request.form.get('captcha-text')
-        if SIMPLE_CAPTCHA.verify(c_text, c_hash):
+    draws = db.session.execute(db.select(Draw).filter_by(canvas_id=canvas.id).where(Draw.date > datetime.datetime.now()+datetime.timedelta(minutes=-30))).all()
+    if  len(draws) > 30 or random.choice([True,False]):
+        if request.method == 'GET':
+            new_captcha_dict = SIMPLE_CAPTCHA.create()
+            return render_template('draw.html', captcha=new_captcha_dict,canvas=canvas)
+        if request.method == 'POST':
+            c_hash = request.form.get('captcha-hash')
+            c_text = request.form.get('captcha-text')
+            if SIMPLE_CAPTCHA.verify(c_text, c_hash):
+                canvas = db.get_or_404(Canvas,id)
+                color = request.form.get('color')
+                if is_hexcolor(color[1:]):
+                    canvas.draw(pos%canvas.width,int(pos/canvas.width),color[1:])
+                else:
+                    print(color)
+                    abort(400)
+                return redirect(url_for('output_html',id=canvas.id))
+    else:
+        if request.method == 'GET':
+            return render_template('draw.html', canvas=canvas)
+        if request.method == 'POST':
             canvas = db.get_or_404(Canvas,id)
             color = request.form.get('color')
             if is_hexcolor(color[1:]):
@@ -149,8 +164,6 @@ def draw(id,pos):
                 print(color)
                 abort(400)
             return redirect(url_for('output_html',id=canvas.id))
-        else:
-            abort(401)
     return
 
 @app.get("/css/<int:id>")
@@ -237,7 +250,7 @@ def list():
 def delete(id):
     with app.app_context():
         canvas = db.get_or_404(Canvas,id)
-        draws =  db.session.execute(db.select(Draw).filter_by().filter_by(canvas_id=canvas.id)).scalars()
+        draws =  db.session.execute(db.select(Draw).filter_by(canvas_id=canvas.id)).scalars()
         db.session.delete(canvas)
         for draw in draws:
             db.session.delete(draw)

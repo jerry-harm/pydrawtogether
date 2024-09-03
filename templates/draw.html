@@ -11,7 +11,9 @@
             <label for="color">input color</label>
             <input id="color" type="color" name="color" autocomplete="on" required>
         </p>
+        {% if captcha %}
         {{ captcha_html(captcha)|safe }}
+        {% endif %}
         <input type="submit" value="Submit" />
     </form>
 </div>
