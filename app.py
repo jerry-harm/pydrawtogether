@@ -136,7 +136,7 @@ def draw(id,pos):
     if pos > (canvas.width)*(canvas.height):
         abort(400)
     draws = db.session.execute(db.select(Draw).filter_by(canvas_id=canvas.id).where(Draw.date > datetime.datetime.now()+datetime.timedelta(minutes=-30))).all()
-    if  len(draws) > 30 or random.choice([True,False]):
+    if  len(draws) > 30:
         if request.method == 'GET':
             new_captcha_dict = SIMPLE_CAPTCHA.create()
             return render_template('draw.html', captcha=new_captcha_dict,canvas=canvas)
