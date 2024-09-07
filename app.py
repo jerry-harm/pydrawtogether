@@ -1,3 +1,4 @@
+from curses import tigetflag
 import os
 import random
 import click
@@ -38,6 +39,7 @@ Compress(app)
 
 db = SQLAlchemy(app)
 
+start_time = datetime.datetime.now()
 
 def is_hexcolor(strhex:str):
     if not strhex:
@@ -176,11 +178,15 @@ def output_css(id):
 
 @app.get("/draw/<int:id>/")
 def output_html(id):
+    if request.if_modified_since <= start_time:
+        abort(304)
     canvas = db.get_or_404(Canvas,id)
-    res = make_response(render_template('canvas.html',canvas=canvas))
+    res = make_response(
+        render_template('canvas.html',canvas=canvas)
+        ,"200 OK"
+        )
     res.cache_control.public = True
-    res.cache_control.max_age = '31536000'
-    res.content_type = 'text/html'
+    res.last_modified = start_time
     return res
  
 @app.get('/img/<int:id>')
