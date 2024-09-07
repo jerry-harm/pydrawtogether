@@ -177,8 +177,8 @@ def output_css(id):
 @app.get("/draw/<int:id>/")
 def output_html(id):
     if request.if_modified_since:
-        if request.if_modified_since <= star_time:
-            return None,304
+        if request.if_modified_since.replace(tzinfo=datetime.timezone.utc) <= star_time.replace(tzinfo=datetime.timezone.utc):
+            return make_response('',304)
     canvas = db.get_or_404(Canvas,id)
     res = make_response(render_template('canvas.html',canvas=canvas))
     res.cache_control.public = True
