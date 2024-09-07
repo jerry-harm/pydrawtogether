@@ -37,7 +37,7 @@ app = SIMPLE_CAPTCHA.init_app(app)
 Compress(app)
 
 db = SQLAlchemy(app)
-
+star_time = datetime.datetime.now()
 
 def is_hexcolor(strhex:str):
     if not strhex:
@@ -176,11 +176,13 @@ def output_css(id):
 
 @app.get("/draw/<int:id>/")
 def output_html(id):
+    if request.if_modified_since:
+        if request.if_modified_since <= star_time:
+            abort(304)
     canvas = db.get_or_404(Canvas,id)
     res = make_response(render_template('canvas.html',canvas=canvas))
     res.cache_control.public = True
-    res.cache_control.max_age = '31536000'
-    res.content_type = 'text/html'
+    res.last_modified = star_time
     return res
  
 @app.get('/img/<int:id>')
