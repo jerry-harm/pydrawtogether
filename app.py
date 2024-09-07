@@ -178,7 +178,7 @@ def output_css(id):
 def output_html(id):
     if request.if_modified_since:
         if request.if_modified_since <= star_time:
-            abort(304)
+            return None,304
     canvas = db.get_or_404(Canvas,id)
     res = make_response(render_template('canvas.html',canvas=canvas))
     res.cache_control.public = True
