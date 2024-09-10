@@ -151,7 +151,6 @@ def draw(id,pos):
                 else:
                     print(color)
                     abort(400)
-                return redirect(url_for('output_html',id=canvas.id))
     else:
         if request.method == 'GET':
             return render_template('draw.html', canvas=canvas)
@@ -163,8 +162,7 @@ def draw(id,pos):
             else:
                 print(color)
                 abort(400)
-            return redirect(url_for('output_html',id=canvas.id))
-    return
+    return render_template('redirect.html',url=url_for('output_html',id=canvas.id))
 
 @app.get("/css/<int:id>")
 def output_css(id):
