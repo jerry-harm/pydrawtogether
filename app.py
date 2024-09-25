@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import random
 import click
 import datetime
@@ -11,8 +12,18 @@ from PIL import Image
 import io
 from flask_compress import Compress
 
+import dotenv
+env_path = Path('.') / '.env'
+dotenv.load_dotenv(dotenv_path=env_path, verbose=True)
+KEY=os.getenv('KEY')
+COMMENT=os.getenv('COMMENT')
+SOURCE=os.getenv('SOURCE')
+
+if not KEY:
+    KEY="dsafdsafwefsagfrgfvsdf"
+
 DEFAULT_CONFIG = {
-    'SECRET_CAPTCHA_KEY': 'asdfwefsdvdasczxcvasdfczxvda',  # use for JWT encoding/decoding
+    'SECRET_CAPTCHA_KEY': KEY,  # use for JWT encoding/decoding
 
     # CAPTCHA GENERATION SETTINGS
     'EXPIRE_SECONDS': 60 * 5,  # takes precedence over EXPIRE_MINUTES
@@ -127,7 +138,7 @@ class Draw(db.Model):
 def index():
     # show all canvas
     canvases = db.session.execute(db.select(Canvas)).scalars()
-    return render_template("index.html",canvases=canvases)
+    return render_template("index.html",canvases=canvases,comment=COMMENT,source=SOURCE)
 
 
 @app.route("/draw/<int:id>/<int:pos>/",methods=['POST','GET'])
@@ -197,7 +208,7 @@ def get_history(id):
     gif_io = io.BytesIO()
     images=canvas.get_history()
     if images:
-        images[0].save(gif_io,'gif',save_all = True, append_images = images[1:], optimize = False, duration = 500,loop=0)
+        images[0].save(gif_io,'gif',save_all = True, append_images = images[1:], optimize = False, duration = 100,loop=0)
         gif_io.seek(0)
         return send_file(gif_io,mimetype='image/gif')
     else:

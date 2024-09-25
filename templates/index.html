@@ -29,13 +29,14 @@
     you are not supposed to draw a whole thing, even some pixel dot will be fine.<br>
     you can check the history if it exist
 </p>
-
-<iframe width="100%" height="400" style="border-width: 0; border-radius: 10px; " src="http://iwcvsbd7cylwvjh4dkdrczg24jy6y6hsuogptv6ebncespsyulua.b32.i2p/post/drawtogether/comment_here"></iframe>
-
+{% if comment %}
+<iframe width="100%" height="400" style="border-width: 0; border-radius: 10px; " src="{{comment}}"></iframe>
+{% endif %}
+{% if source %}
 <p>
-    <a href="http://iurzzv4pam4irvfomtkcgnkvij242cuuet7xfpftut573bexkrvq.b32.i2p/jestar/pydrawtogether">source code here</a>
+    <a href="">source code here</a>
 </p>
-
+{% endif %}
 </div>
 
 {% endblock %}
