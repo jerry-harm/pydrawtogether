@@ -103,13 +103,13 @@ class Canvas(db.Model):
                 frame.putpixel((i,j),hex_to_rgb(self.data[j][i]))
         return frame
     
-    def get_history(self):
+    def get_history(self,num=100):
         # get history gif
         if not self.history:
             return False
         gif = []
         data = self.data
-        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc()).limit(100)).scalars()
+        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc()).limit(num)).scalars()
 
         frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
         for i in range(self.width):
@@ -203,10 +203,11 @@ def get_img(id):
     return send_file(img_io,mimetype='image/gif')
 
 @app.get('/history/<int:id>')
-def get_history(id):
+@app.get('/history/<int:id>/<int:num>')
+def get_history(id,num=100):
     canvas = db.get_or_404(Canvas,id)
     gif_io = io.BytesIO()
-    images=canvas.get_history()
+    images=canvas.get_history(num)
     if images:
         images[0].save(gif_io,'gif',save_all = True, append_images = images[1:], optimize = False, duration = 100,loop=0)
         gif_io.seek(0)
