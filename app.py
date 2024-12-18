@@ -109,7 +109,7 @@ class Canvas(db.Model):
             return False
         gif = []
         data = self.data
-        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc())).scalars()
+        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc()).limit(100)).scalars()
 
         frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
         for i in range(self.width):
