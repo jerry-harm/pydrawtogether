@@ -182,10 +182,11 @@ def draw(id,pos):
             color = request.form.get('color')
             if is_hexcolor(color[1:]):
                 canvas.draw(pos%canvas.width,int(pos/canvas.width),color[1:])
-                executor.submit(canvas.get_history)
             else:
                 print(color)
                 abort(400)
+    if len(draws) < 4:
+        executor.submit(canvas.get_history)
     return render_template('redirect.html',url=url_for('output_html',id=canvas.id))
 
 @app.get("/css/<int:id>")
