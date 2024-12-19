@@ -9,13 +9,14 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
-Flask = "^3.0.3"
+Flask = {extras = ["async"], version = "^3.1.0"}
 flask-simple-captcha = "^5.5.5"
 flask-sqlalchemy = "^3.1.1"
 pillow = "^10.4.0"
 flask-compress = "^1.15"
 python-dotenv = "^1.0.1"
 flask-migrate = "^4.0.7"
+flask-executor = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 watchdog = "^4.0.2"

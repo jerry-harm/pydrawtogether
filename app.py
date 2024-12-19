@@ -3,15 +3,16 @@ from pathlib import Path
 import random
 import click
 import datetime
-from flask import Flask, abort, redirect, send_file, url_for, make_response, request,render_template
+from flask import Flask, abort, after_this_request, redirect, send_file, url_for, make_response, request,render_template
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import JSON, Boolean, ForeignKey, Integer, String, DateTime,update
+from sqlalchemy import BLOB, JSON, Boolean, ForeignKey, Integer, String, DateTime,update
 from sqlalchemy.orm import mapped_column
 from flask_simple_captcha import CAPTCHA
 from PIL import Image
 import io
 from flask_compress import Compress
 from flask_migrate import Migrate
+from flask_executor import Executor
 
 import dotenv
 env_path = Path('.') / '.env'
@@ -51,7 +52,7 @@ Compress(app)
 db = SQLAlchemy(app)
 star_time = datetime.datetime.now()
 migrate = Migrate(app, db)
-
+executor = Executor(app)
 
 def is_hexcolor(strhex:str):
     if not strhex:
@@ -76,6 +77,7 @@ class Canvas(db.Model):
     height = mapped_column(Integer,nullable=False)
     history = mapped_column(Boolean,nullable=False)
     data = mapped_column(JSON,nullable=False)
+    history_data = mapped_column(BLOB,nullable=True)
     
     def draw(self,x,y,color):
         # draw a pixel
@@ -106,13 +108,13 @@ class Canvas(db.Model):
                 frame.putpixel((i,j),hex_to_rgb(self.data[j][i]))
         return frame
     
-    def get_history(self,num=100):
+    def get_history(self):
         # get history gif
         if not self.history:
             return False
         gif = []
         data = self.data
-        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc()).limit(num)).scalars()
+        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc())).scalars()
 
         frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
         for i in range(self.width):
@@ -127,7 +129,14 @@ class Canvas(db.Model):
                 for j in range(self.height):
                     frame.putpixel((i,j),(hex_to_rgb(data[j][i])))
             gif.append(frame)
-        return gif[::-1]
+        
+        gif_io = io.BytesIO()
+        gif[0].save(gif_io,'gif',save_all = True, append_images = gif[::-1][1:], optimize = False, duration = 10,loop=0)
+        gif_io.seek(0)
+        self.history_data = gif_io.read()
+        db.session.execute(update(Canvas).where(Canvas.id==self.id).values(history_data=self.history_data))
+        db.session.commit()
+        
 
 class Draw(db.Model):
     id = mapped_column(Integer,primary_key=True)
@@ -173,6 +182,7 @@ def draw(id,pos):
             color = request.form.get('color')
             if is_hexcolor(color[1:]):
                 canvas.draw(pos%canvas.width,int(pos/canvas.width),color[1:])
+                executor.submit(canvas.get_history)
             else:
                 print(color)
                 abort(400)
@@ -206,18 +216,12 @@ def get_img(id):
     return send_file(img_io,mimetype='image/gif')
 
 @app.get('/history/<int:id>')
-@app.get('/history/<int:id>/<int:num>')
-def get_history(id,num=100):
+def get_history(id):
     canvas = db.get_or_404(Canvas,id)
-    gif_io = io.BytesIO()
-    images=canvas.get_history(num)
-    if images:
-        images[0].save(gif_io,'gif',save_all = True, append_images = images[1:], optimize = False, duration = 100,loop=0)
-        gif_io.seek(0)
-        return send_file(gif_io,mimetype='image/gif')
-    else:
-        print(images)
+    if not canvas.history_data:
         abort(404)
+    gif_io = io.BytesIO(canvas.history_data)
+    return send_file(gif_io,mimetype='image/gif')
 
 @app.cli.command("init")
 def init():
