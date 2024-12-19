@@ -11,6 +11,7 @@ from flask_simple_captcha import CAPTCHA
 from PIL import Image
 import io
 from flask_compress import Compress
+from flask_migrate import Migrate
 
 import dotenv
 env_path = Path('.') / '.env'
@@ -49,6 +50,8 @@ Compress(app)
 
 db = SQLAlchemy(app)
 star_time = datetime.datetime.now()
+migrate = Migrate(app, db)
+
 
 def is_hexcolor(strhex:str):
     if not strhex:
