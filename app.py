@@ -185,7 +185,7 @@ def draw(id,pos):
             else:
                 print(color)
                 abort(400)
-    if len(draws) < 4:
+    if len(draws) < 2:
         executor.submit(canvas.get_history)
     return render_template('redirect.html',url=url_for('output_html',id=canvas.id))
 
