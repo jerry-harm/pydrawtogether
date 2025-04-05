@@ -114,7 +114,7 @@ class Canvas(db.Model):
             return False
         gif = []
         data = self.data
-        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc())).scalars()
+        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc()).limit(400)).scalars()
 
         frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
         for i in range(self.width):
@@ -131,7 +131,7 @@ class Canvas(db.Model):
             gif.append(frame)
         
         gif_io = io.BytesIO()
-        gif[0].save(gif_io,'gif',save_all = True, append_images = gif[::-1][1:], optimize = False, duration = 10,loop=0)
+        gif[0].save(gif_io,'gif',save_all = True, append_images = gif[::-1][1:], optimize = False, duration = 1,loop=0)
         gif_io.seek(0)
         self.history_data = gif_io.read()
         db.session.execute(update(Canvas).where(Canvas.id==self.id).values(history_data=self.history_data))
