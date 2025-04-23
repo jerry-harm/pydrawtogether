@@ -1,43 +1,61 @@
+"""app"""
+
 import os
-from pathlib import Path
-import random
-import click
+import io
 import datetime
-from flask import Flask, abort, after_this_request, redirect, send_file, url_for, make_response, request,render_template
+from pathlib import Path
+import click
+from flask import (
+    Flask,
+    abort,
+    after_this_request,
+    redirect,
+    send_file,
+    url_for,
+    make_response,
+    request,
+    render_template,
+)
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import BLOB, JSON, Boolean, ForeignKey, Integer, String, DateTime,update
+from sqlalchemy import (
+    BLOB,
+    JSON,
+    Boolean,
+    ForeignKey,
+    Integer,
+    String,
+    DateTime,
+    update,
+)
 from sqlalchemy.orm import mapped_column
 from flask_simple_captcha import CAPTCHA
 from PIL import Image
-import io
 from flask_compress import Compress
 from flask_migrate import Migrate
 from flask_executor import Executor
 
 import dotenv
-env_path = Path('.') / '.env'
+
+env_path = Path(".") / ".env"
 dotenv.load_dotenv(dotenv_path=env_path, verbose=True)
-KEY=os.getenv('KEY')
-COMMENT=os.getenv('COMMENT')
-SOURCE=os.getenv('SOURCE')
+KEY = os.getenv("KEY")
+COMMENT = os.getenv("COMMENT")
+SOURCE = os.getenv("SOURCE")
 
 if not KEY:
-    KEY="dsafdsafwefsagfrgfvsdf"
+    KEY = "dsafdsafwefsagfrgfvsdf"
 
 DEFAULT_CONFIG = {
-    'SECRET_CAPTCHA_KEY': KEY,  # use for JWT encoding/decoding
-
+    "SECRET_CAPTCHA_KEY": KEY,  # use for JWT encoding/decoding
     # CAPTCHA GENERATION SETTINGS
-    'EXPIRE_SECONDS': 60 * 5,  # takes precedence over EXPIRE_MINUTES
-    'CAPTCHA_IMG_FORMAT': 'JPEG',  # 'PNG' or 'JPEG' (JPEG is 3X faster)
-
+    "EXPIRE_SECONDS": 60 * 5,  # takes precedence over EXPIRE_MINUTES
+    "CAPTCHA_IMG_FORMAT": "JPEG",  # 'PNG' or 'JPEG' (JPEG is 3X faster)
     # CAPTCHA TEXT SETTINGS
-    'CAPTCHA_LENGTH': 6,  # Length of the generated CAPTCHA text
-    'CAPTCHA_DIGITS': False,  # Should digits be added to the character pool?
-    'EXCLUDE_VISUALLY_SIMILAR': True,  # Exclude visually similar characters
-    'BACKGROUND_COLOR': (0, 0, 0),  # RGB(A?) background color (default black)
-    'TEXT_COLOR': (255, 255, 255),  # RGB(A?) text color (default white)
-
+    "CAPTCHA_LENGTH": 6,  # Length of the generated CAPTCHA text
+    "CAPTCHA_DIGITS": False,  # Should digits be added to the character pool?
+    "EXCLUDE_VISUALLY_SIMILAR": True,  # Exclude visually similar characters
+    "BACKGROUND_COLOR": (0, 0, 0),  # RGB(A?) background color (default black)
+    "TEXT_COLOR": (255, 255, 255),  # RGB(A?) text color (default white)
     # Optional settings
     #'ONLY_UPPERCASE': True, # Only use uppercase characters
     #'CHARACTER_POOL': 'AaBb',  # Use a custom character pool
@@ -45,7 +63,9 @@ DEFAULT_CONFIG = {
 SIMPLE_CAPTCHA = CAPTCHA(DEFAULT_CONFIG)
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////' + os.path.join(app.root_path, 'data.db')
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////" + os.path.join(
+    app.root_path, "data.db"
+)
 app = SIMPLE_CAPTCHA.init_app(app)
 Compress(app)
 
@@ -54,7 +74,8 @@ star_time = datetime.datetime.now()
 migrate = Migrate(app, db)
 executor = Executor(app)
 
-def is_hexcolor(strhex:str):
+
+def is_hexcolor(strhex: str):
     if not strhex:
         return False
     if len(strhex) != 6:
@@ -64,214 +85,272 @@ def is_hexcolor(strhex:str):
             return False
     return True
 
-def hex_to_rgb(strhex:str):
+
+def hex_to_rgb(strhex: str):
     if is_hexcolor(strhex):
-        return (int(strhex[0:2],16),int(strhex[2:4],16),int(strhex[4:6],16))
+        return (int(strhex[0:2], 16), int(strhex[2:4], 16), int(strhex[4:6], 16))
     else:
         raise ValueError(strhex)
 
+
 class Canvas(db.Model):
-    id = mapped_column(Integer,primary_key=True)
-    name = mapped_column(String(60),unique=True)
-    width = mapped_column(Integer,nullable=False)
-    height = mapped_column(Integer,nullable=False)
-    history = mapped_column(Boolean,nullable=False)
-    data = mapped_column(JSON,nullable=False)
-    history_data = mapped_column(BLOB,nullable=True)
-    
-    def draw(self,x,y,color):
-        # draw a pixel
+    id = mapped_column(Integer, primary_key=True)
+    name = mapped_column(String(60), unique=True)
+    width = mapped_column(Integer, nullable=False)
+    height = mapped_column(Integer, nullable=False)
+    history = mapped_column(Boolean, nullable=False)
+    data = mapped_column(JSON, nullable=False)
+    history_data = mapped_column(BLOB, nullable=True)
+
+    def draw(self, x, y, color):
+        """draw a pixel"""
         if not is_hexcolor(color):
             raise ValueError(color)
         if x >= self.width or y >= self.height:
-            raise ValueError(x,y)
+            raise ValueError(x, y)
         if self.history:
-            new = Draw(x=x,y=y,color=self.data[y][x],canvas_id=self.id)
+            new = Draw(x=x, y=y, color=self.data[y][x], canvas_id=self.id)
             db.session.add(new)
-        self.data[y][x]=color
-        db.session.execute(update(Canvas).where(Canvas.id==self.id).values(data=self.data))
+        self.data[y][x] = color
+        db.session.execute(
+            update(Canvas).where(Canvas.id == self.id).values(data=self.data)
+        )
         db.session.commit()
-    
+
     def get_css(self):
-        # get css
+        """get css"""
         css = ""
         for i in range(self.height):
             for j in range(self.width):
-                css +="#p{} {{{}}} ".format(j+i*self.width,'background-color : #'+self.data[i][j])
+                css += "#p{} {{{}}} ".format(
+                    j + i * self.width, "background-color : #" + self.data[i][j]
+                )
         return css
 
     def get_pic(self):
-        # get picture
-        frame = Image.new("RGB",(self.width,self.height),color=(255,255,255))
+        """get picture"""
+        frame = Image.new("RGB", (self.width, self.height), color=(255, 255, 255))
         for i in range(self.width):
             for j in range(self.height):
-                frame.putpixel((i,j),hex_to_rgb(self.data[j][i]))
+                frame.putpixel((i, j), hex_to_rgb(self.data[j][i]))
         return frame
-    
-    def get_history(self):
-        # get history gif
+
+    def get_history(self, length=400):
+        """get history gif"""
         if not self.history:
             return False
         gif = []
         data = self.data
-        pixels = db.session.execute(db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc()).limit(400)).scalars()
+        if length > 0:
+            pixels = db.session.execute(
+                db.select(Draw)
+                .filter_by(canvas_id=self.id)
+                .order_by(Draw.date.desc())
+                .limit(length)
+            ).scalars()
+        else:
+            pixels = db.session.execute(
+                db.select(Draw).filter_by(canvas_id=self.id).order_by(Draw.date.desc())
+            ).scalars()
 
-        frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
+        frame = Image.new("RGB", (self.width, self.height), color=(255, 255, 255))
         for i in range(self.width):
             for j in range(self.height):
-                frame.putpixel((i,j),(hex_to_rgb(data[j][i])))
+                frame.putpixel((i, j), (hex_to_rgb(data[j][i])))
         gif.append(frame)
 
         for pixel in pixels:
-            frame = Image.new('RGB',(self.width,self.height),color=(255,255,255))
-            data[pixel.y][pixel.x]=pixel.color
+            frame = Image.new("RGB", (self.width, self.height), color=(255, 255, 255))
+            data[pixel.y][pixel.x] = pixel.color
             for i in range(self.width):
                 for j in range(self.height):
-                    frame.putpixel((i,j),(hex_to_rgb(data[j][i])))
+                    frame.putpixel((i, j), (hex_to_rgb(data[j][i])))
             gif.append(frame)
-        
+
         gif_io = io.BytesIO()
-        gif[0].save(gif_io,'gif',save_all = True, append_images = gif[::-1][1:], optimize = False, duration = 1,loop=0)
+        gif[0].save(
+            gif_io,
+            "gif",
+            save_all=True,
+            append_images=gif[::-1][1:],
+            optimize=False,
+            duration=1,
+            loop=0,
+        )
         gif_io.seek(0)
         self.history_data = gif_io.read()
-        db.session.execute(update(Canvas).where(Canvas.id==self.id).values(history_data=self.history_data))
+        db.session.execute(
+            update(Canvas)
+            .where(Canvas.id == self.id)
+            .values(history_data=self.history_data)
+        )
         db.session.commit()
-        
+
 
 class Draw(db.Model):
-    id = mapped_column(Integer,primary_key=True)
+    id = mapped_column(Integer, primary_key=True)
     x = mapped_column(Integer)
     y = mapped_column(Integer)
-    color = mapped_column(String(6),nullable=False)
-    date = mapped_column(DateTime,default=datetime.datetime.now)
-    canvas_id = mapped_column(ForeignKey('canvas.id',ondelete='CASCADE'),nullable=False)
+    color = mapped_column(String(6), nullable=False)
+    date = mapped_column(DateTime, default=datetime.datetime.now)
+    canvas_id = mapped_column(
+        ForeignKey("canvas.id", ondelete="CASCADE"), nullable=False
+    )
+
 
 @app.route("/")
 def index():
     # show all canvas
     canvases = db.session.execute(db.select(Canvas)).scalars()
-    return render_template("index.html",canvases=canvases,comment=COMMENT,source=SOURCE)
+    return render_template(
+        "index.html", canvases=canvases, comment=COMMENT, source=SOURCE
+    )
 
 
-@app.route("/draw/<int:id>/<int:pos>/",methods=['POST','GET'])
-def draw(id,pos):
-    canvas = db.get_or_404(Canvas,id)
-    if pos > (canvas.width)*(canvas.height):
+@app.route("/draw/<int:id>/<int:pos>/", methods=["POST", "GET"])
+def draw(id, pos):
+    canvas = db.get_or_404(Canvas, id)
+    if pos > (canvas.width) * (canvas.height):
         abort(400)
-    draws = db.session.execute(db.select(Draw).filter_by(canvas_id=canvas.id).where(Draw.date > datetime.datetime.now()+datetime.timedelta(minutes=-30))).all()
-    if  len(draws) > 30:
-        if request.method == 'GET':
+    draws = db.session.execute(
+        db.select(Draw)
+        .filter_by(canvas_id=canvas.id)
+        .where(Draw.date > datetime.datetime.now() + datetime.timedelta(minutes=-30))
+    ).all()
+    if len(draws) > 30:
+        if request.method == "GET":
             new_captcha_dict = SIMPLE_CAPTCHA.create()
-            return render_template('draw.html', captcha=new_captcha_dict,canvas=canvas)
-        if request.method == 'POST':
-            c_hash = request.form.get('captcha-hash')
-            c_text = request.form.get('captcha-text')
+            return render_template("draw.html", captcha=new_captcha_dict, canvas=canvas)
+        if request.method == "POST":
+            c_hash = request.form.get("captcha-hash")
+            c_text = request.form.get("captcha-text")
             if SIMPLE_CAPTCHA.verify(c_text, c_hash):
-                canvas = db.get_or_404(Canvas,id)
-                color = request.form.get('color')
+                canvas = db.get_or_404(Canvas, id)
+                color = request.form.get("color")
                 if is_hexcolor(color[1:]):
-                    canvas.draw(pos%canvas.width,int(pos/canvas.width),color[1:])
+                    canvas.draw(pos % canvas.width, int(pos / canvas.width), color[1:])
                 else:
                     print(color)
                     abort(400)
     else:
-        if request.method == 'GET':
-            return render_template('draw.html', canvas=canvas)
-        if request.method == 'POST':
-            canvas = db.get_or_404(Canvas,id)
-            color = request.form.get('color')
+        if request.method == "GET":
+            return render_template("draw.html", canvas=canvas)
+        if request.method == "POST":
+            canvas = db.get_or_404(Canvas, id)
+            color = request.form.get("color")
             if is_hexcolor(color[1:]):
-                canvas.draw(pos%canvas.width,int(pos/canvas.width),color[1:])
+                canvas.draw(pos % canvas.width, int(pos / canvas.width), color[1:])
             else:
                 print(color)
                 abort(400)
-    if len(draws) < 2:
-        executor.submit(canvas.get_history)
-    return render_template('redirect.html',url=url_for('output_html',id=canvas.id))
+    return render_template("redirect.html", url=url_for("output_html", id=canvas.id))
+
 
 @app.get("/css/<int:id>")
 def output_css(id):
     # output canvas data
-    canvas = db.get_or_404(Canvas,id)
+    canvas = db.get_or_404(Canvas, id)
     res = make_response(canvas.get_css())
-    res.content_type = 'text/css'
+    res.content_type = "text/css"
     return res
+
 
 @app.get("/draw/<int:id>/")
 def output_html(id):
     if request.if_modified_since:
-        if request.if_modified_since.replace(tzinfo=datetime.timezone.utc) <= star_time.replace(tzinfo=datetime.timezone.utc):
-            return make_response('',304)
-    canvas = db.get_or_404(Canvas,id)
-    res = make_response(render_template('canvas.html',canvas=canvas))
+        if request.if_modified_since.replace(
+            tzinfo=datetime.timezone.utc
+        ) <= star_time.replace(tzinfo=datetime.timezone.utc):
+            return make_response("", 304)
+    canvas = db.get_or_404(Canvas, id)
+    res = make_response(render_template("canvas.html", canvas=canvas))
     res.cache_control.public = True
     res.last_modified = star_time
     return res
- 
-@app.get('/img/<int:id>')
-def get_img(id):
-    canvas = db.get_or_404(Canvas,id)
-    img_io = io.BytesIO()
-    canvas.get_pic().save(img_io,'gif')
-    img_io.seek(0)
-    return send_file(img_io,mimetype='image/gif')
 
-@app.get('/history/<int:id>')
+
+@app.get("/img/<int:id>")
+def get_img(id):
+    canvas = db.get_or_404(Canvas, id)
+    img_io = io.BytesIO()
+    canvas.get_pic().save(img_io, "gif")
+    img_io.seek(0)
+    return send_file(img_io, mimetype="image/gif")
+
+
+@app.get("/history/<int:id>")
 def get_history(id):
-    canvas = db.get_or_404(Canvas,id)
+    canvas = db.get_or_404(Canvas, id)
     if not canvas.history_data:
         abort(404)
     gif_io = io.BytesIO(canvas.history_data)
-    return send_file(gif_io,mimetype='image/gif')
+    return send_file(gif_io, mimetype="image/gif")
+
 
 @app.cli.command("init")
 def init():
     with app.app_context():
         db.create_all()
-    click.echo('app inited')
+    click.echo("app inited")
+
 
 @app.cli.command("add")
 @click.argument("name")
-@click.argument("width",type=int)
-@click.argument("height",type=int)
-@click.argument("history",type=bool)
+@click.argument("width", type=int)
+@click.argument("height", type=int)
+@click.argument("history", type=bool)
 @click.option("--fill")
-def add(name,width,height,history,fill):
+def add(name, width, height, history, fill):
     with app.app_context():
         if not is_hexcolor(fill):
-            click.echo('use ffffff')
-            fill = 'ffffff'
+            click.echo("use ffffff")
+            fill = "ffffff"
         data = []
         for i in range(height):
             t = []
             for j in range(width):
                 t.append(fill)
             data.append(t)
-        canvas = Canvas(name=name,width=width,height=height,data=data,history=history)
+        canvas = Canvas(
+            name=name, width=width, height=height, data=data, history=history
+        )
         db.session.add(canvas)
         db.session.commit()
-        click.echo('added')
+        click.echo("added")
+
 
 @app.cli.command("list")
 def list():
     with app.app_context():
-        canvases =  db.session.execute(db.select(Canvas)).scalars()
+        canvases = db.session.execute(db.select(Canvas)).scalars()
         for canvas in canvases:
             click.echo(canvas.id)
             click.echo(canvas.name)
             click.echo(canvas.width)
             click.echo(canvas.height)
             click.echo(canvas.history)
-            click.echo('')
-        
+            click.echo("")
+
 
 @app.cli.command("del")
 @click.argument("id")
 def delete(id):
     with app.app_context():
-        canvas = db.get_or_404(Canvas,id)
-        draws =  db.session.execute(db.select(Draw).filter_by(canvas_id=canvas.id)).scalars()
+        canvas = db.session.get(Canvas, id)
+        draws = db.session.execute(
+            db.select(Draw).filter_by(canvas_id=canvas.id)
+        ).scalars()
         db.session.delete(canvas)
-        for draw in draws:
-            db.session.delete(draw)
+        for d in draws:
+            db.session.delete(d)
         db.session.commit()
+
+
+@app.cli.command("genhistory")
+@click.argument("id")
+@click.argument("length")
+def gen_history(id, length):
+    with app.app_context():
+        canvas = db.session.get(Canvas, id)
+        canvas.get_history(length)
+        click.echo("done")
