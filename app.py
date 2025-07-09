@@ -1,5 +1,6 @@
 """app"""
-
+# TODO history export with text
+# TODO fix bugs
 import os
 import io
 import datetime
@@ -222,11 +223,11 @@ def draw(id, pos):
             new_captcha_dict = SIMPLE_CAPTCHA.create()
             return render_template("draw.html", captcha=new_captcha_dict, canvas=canvas)
         if request.method == "POST":
-            c_hash = request.form.get("captcha-hash")
-            c_text = request.form.get("captcha-text")
+            c_hash = str(request.form.get("captcha-hash"))
+            c_text = str(request.form.get("captcha-text"))
             if SIMPLE_CAPTCHA.verify(c_text, c_hash):
                 canvas = db.get_or_404(Canvas, id)
-                color = request.form.get("color")
+                color = str(request.form.get("color"))
                 if is_hexcolor(color[1:]):
                     canvas.draw(pos % canvas.width, int(pos / canvas.width), color[1:])
                 else:
@@ -237,7 +238,7 @@ def draw(id, pos):
             return render_template("draw.html", canvas=canvas)
         if request.method == "POST":
             canvas = db.get_or_404(Canvas, id)
-            color = request.form.get("color")
+            color = str(request.form.get("color"))
             if is_hexcolor(color[1:]):
                 canvas.draw(pos % canvas.width, int(pos / canvas.width), color[1:])
             else:
