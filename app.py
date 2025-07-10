@@ -191,9 +191,6 @@ class Canvas(db.Model):
         )
         db.session.commit()
         
-        def export():
-            # TODO
-            ...
 
 
 class Draw(db.Model):
@@ -226,7 +223,7 @@ def draw(id, pos):
         .filter_by(canvas_id=canvas.id)
         .where(Draw.date > datetime.datetime.now() + datetime.timedelta(minutes=-30))
     ).all()
-    if len(draws) > 30:
+    if len(draws) > 0:
         if request.method == "GET":
             new_captcha_dict = SIMPLE_CAPTCHA.create()
             return render_template("draw.html", captcha=new_captcha_dict, canvas=canvas)
@@ -295,10 +292,10 @@ def get_history(id):
     gif_io = io.BytesIO(canvas.history_data)
     return send_file(gif_io, mimetype="image/gif")
 
-@app.get("/export/<int:id>")
-def export_data(id):
-    # TODO
-    return id
+@app.get("/export")
+def export_data():
+    return send_file(os.path.join(app.root_path, "data.db"),as_attachment=True)
+    
 
 @app.cli.command("init")
 def init():
@@ -365,5 +362,5 @@ def delete(id):
 def gen_history(id, length):
     with app.app_context():
         canvas = db.session.get(Canvas, id)
-        canvas.get_history(length)
+        canvas.get_history(int(length))
         click.echo("done")
