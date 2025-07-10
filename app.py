@@ -1,6 +1,5 @@
 """app"""
-# TODO history export with text
-# TODO fix bugs
+
 import os
 import io
 import datetime
@@ -64,7 +63,12 @@ DEFAULT_CONFIG = {
 SIMPLE_CAPTCHA = CAPTCHA(DEFAULT_CONFIG)
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////" + os.path.join(
+if os.name == 'posix':
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////" + os.path.join(
+    app.root_path, "data.db"
+)
+else:
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
     app.root_path, "data.db"
 )
 app = SIMPLE_CAPTCHA.init_app(app)
@@ -186,6 +190,10 @@ class Canvas(db.Model):
             .values(history_data=self.history_data)
         )
         db.session.commit()
+        
+        def export():
+            # TODO
+            ...
 
 
 class Draw(db.Model):
@@ -287,6 +295,10 @@ def get_history(id):
     gif_io = io.BytesIO(canvas.history_data)
     return send_file(gif_io, mimetype="image/gif")
 
+@app.get("/export/<int:id>")
+def export_data(id):
+    # TODO
+    return id
 
 @app.cli.command("init")
 def init():
